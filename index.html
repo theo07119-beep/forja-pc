@@ -216,7 +216,7 @@ document.querySelectorAll('[data-pre]').forEach(b=>b.onclick=()=>{const k=b.data
 $('#orc').addEventListener('input',upd);
 $('#bc').onclick=async()=>{try{await navigator.clipboard.writeText(summary());$('#st1').textContent='Lista copiada.'}catch(e){$('#ex').textContent=summary();$('#st1').textContent='Não consegui copiar aqui; a lista está no painel Pergunte ao FORJA.'}};
 $("#uso").addEventListener("change",upd);
-const AIP={gemini:{n:'Gemini (grátis)',m:'gemini-2.5-flash',h:'Grátis: crie a chave em aistudio.google.com/apikey e cole aqui.'},openrouter:{n:'OpenRouter (modelos grátis)',m:'meta-llama/llama-3.3-70b-instruct:free',h:'Grátis: crie a chave em openrouter.ai/keys. Use modelos terminados em :free.'},openai:{n:'ChatGPT (OpenAI)',m:'gpt-4o-mini',h:'A API da OpenAI é paga: precisa de crédito na conta, mesmo com o ChatGPT gratuito.'},claude:{n:'Claude (Anthropic)',m:'claude-haiku-5-5',h:'A API da Anthropic é paga: precisa de crédito na conta.'}};
+const AIP={gemini:{n:'Gemini (grátis)',m:'gemini-2.5-flash',h:'Grátis: crie a chave em aistudio.google.com/apikey e cole aqui.'},openrouter:{n:'OpenRouter (modelos grátis)',m:'openrouter/free',h:'Grátis: crie a chave em openrouter.ai/keys. Use modelos terminados em :free.'},openai:{n:'ChatGPT (OpenAI)',m:'gpt-4o-mini',h:'A API da OpenAI é paga: precisa de crédito na conta, mesmo com o ChatGPT gratuito.'},claude:{n:'Claude (Anthropic)',m:'claude-haiku-5-5',h:'A API da Anthropic é paga: precisa de crédito na conta.'}};
 const cfg=()=>{try{return JSON.parse(localStorage.getItem('forja-ai'))||{}}catch(e){return{}}};
 async function gen(text){
   const c=cfg();if(!c.key||!AIP[c.p]){const e=new Error('no_key');e.code='no_key';throw e}
