@@ -340,7 +340,7 @@ function makeAI(){
   S.json=async t=>{const x=await gen(t+'\n\nResponda somente com JSON válido, sem markdown.');const m=x.match(/\{[\s\S]*\}/);if(!m)throw new Error('A IA não devolveu JSON. Tente de novo.');return JSON.parse(m[0])};
   return S}
 $('#cp').innerHTML=Object.entries(AIP).map(([k,v])=>`<option value="${k}">${v.n}</option>`).join('');
-const hint=()=>$('#chint').textContent=AIP[$('#cp==')?$('#cp').value:$('#cp'].value].h || AIP[$('#cp').value].h;
+const hint=()=>$('#chint').textContent=AIP[$('#cp').value].h;
 const c0=cfg();if(c0.p&&AIP[c0.p])$('#cp').value=c0.p;$('#ck').value=c0.key||'';$('#cm').value=c0.model||'';hint();
 $('#cp').onchange=hint;$('#bcfg').onclick=()=>$('#cfg').hidden=!$('#cfg').hidden;
 $('#cs').onclick=()=>{try{localStorage.setItem('forja-ai',JSON.stringify({p:$('#cp').value,key:$('#ck').value.trim(),model:$('#cm').value.trim()}))}catch(e){}$('#cfg').hidden=true;$('#st1').textContent='IA conectada. Pode usar os botões de IA.'};
