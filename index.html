@@ -72,7 +72,13 @@ button:disabled{opacity:.45;cursor:not-allowed}
     <p>Diga quanto quer gastar e o que vai fazer. A IA escolhe as peças, o motor de regras confere se tudo encaixa e você ajusta o que quiser.</p>
     <div class="ai">
       <label class="f">Orçamento (R$)<input id="orc" type="number" value="6000" min="2000" step="100" style="width:130px"></label>
-      <label class="f">Uso<select id="uso"><option value="g1080">Jogos em 1080p</option><option value="g1440">Jogos em 1440p</option><option value="ed">Edição e criação</option></select></label>
+      <label class="f">Uso<select id="uso">
+        <option value="g1080">Jogos em 1080p</option>
+        <option value="g1440">Jogos em 1440p</option>
+        <option value="g4k">Jogos em 4K (Ultra)</option>
+        <option value="ed">Edição e Criação (3D/Vídeo)</option>
+        <option value="stream">Streaming e Multitarefa</option>
+      </select></label>
       <button id="bm">Montar com IA</button>
       <span class="msg" id="st1" style="margin:0 0 8px"></span></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center"><span class="msg" style="margin:0">Ou comece por uma build pronta:</span><button class="g" data-pre="a">Entrada 1080p</button><button class="g" data-pre="b">Gamer 1440p</button><button class="g" data-pre="c">Criador de conteúdo</button>
     </div>
@@ -119,17 +125,108 @@ button:disabled{opacity:.45;cursor:not-allowed}
 <script>
 const $=s=>document.querySelector(s),P=n=>n.toLocaleString("pt-BR",{style:"currency",currency:"BRL",maximumFractionDigits:0});
 const D={
-cpu:[{id:"c1",n:"Ryzen 5 5600",p:650,s:"AM4",t:65,k:3},{id:"c2",n:"Ryzen 7 5700X3D",p:1300,s:"AM4",t:105,k:4},{id:"c3",n:"Ryzen 5 7600",p:1050,s:"AM5",t:65,k:3.5},{id:"c4",n:"Ryzen 7 7800X3D",p:2400,s:"AM5",t:120,k:5},{id:"c5",n:"Core i5-12400F",p:750,s:"LGA1700",t:65,k:3},{id:"c6",n:"Core i5-14600KF",p:1700,s:"LGA1700",t:125,k:4.5},{id:'c7',n:'Ryzen 5 5500',p:500,s:'AM4',t:65,k:2.5},{id:'c8',n:'Core i3-12100F',p:450,s:'LGA1700',t:58,k:2},{id:'c9',n:'Ryzen 9 7900X',p:2300,s:'AM5',t:170,k:4.5},{id:'c10',n:'Core i7-14700K',p:2800,s:'LGA1700',t:125,k:5}],
-mb:[{id:"m1",n:"B550M",p:600,s:"AM4",r:"DDR4",f:"mATX"},{id:"m2",n:"B650M",p:850,s:"AM5",r:"DDR5",f:"mATX"},{id:"m3",n:"B650 ATX",p:1150,s:"AM5",r:"DDR5",f:"ATX"},{id:"m4",n:"B760M DDR4",p:700,s:"LGA1700",r:"DDR4",f:"mATX"},{id:"m5",n:"Z790 ATX DDR5",p:1500,s:"LGA1700",r:"DDR5",f:"ATX"},{id:'m6',n:'A620M',p:600,s:'AM5',r:'DDR5',f:'mATX'},{id:'m7',n:'B760M DDR5',p:850,s:'LGA1700',r:'DDR5',f:'mATX'},{id:'m8',n:'B550 ATX',p:800,s:'AM4',r:'DDR4',f:'ATX'}],
-ram:[{id:"r1",n:"16 GB DDR4 3200",p:200,r:"DDR4",g:16},{id:"r2",n:"32 GB DDR4 3200",p:380,r:"DDR4",g:32},{id:"r3",n:"16 GB DDR5 6000",p:320,r:"DDR5",g:16},{id:"r4",n:"32 GB DDR5 6000",p:600,r:"DDR5",g:32},{id:'r5',n:'64 GB DDR5 6000',p:1150,r:'DDR5',g:64},{id:'r6',n:'64 GB DDR4 3200',p:760,r:'DDR4',g:64}],
-gpu:[{id:"g1",n:"RX 7600",p:1500,t:165,l:240,k:2},{id:"g2",n:"RTX 4060",p:1900,t:115,l:240,k:3},{id:"g3",n:"RTX 4060 Ti",p:2500,t:160,l:250,k:3.5},{id:"g4",n:"RX 7800 XT",p:3600,t:263,l:310,k:4},{id:"g5",n:"RTX 4070 Super",p:4300,t:220,l:300,k:4.5},{id:"g6",n:"RTX 4080 Super",p:7500,t:320,l:310,k:5},{id:'g7',n:'RX 6600',p:1300,t:132,l:240,k:2.5},{id:'g8',n:'RTX 4070',p:3600,t:200,l:245,k:4},{id:'g9',n:'RX 7900 XT',p:5200,t:300,l:320,k:4.5},{id:'g10',n:'RTX 4090',p:14500,t:450,l:340,k:5}],
-ssd:[{id:"s1",n:"SSD NVMe 500 GB",p:230,g:500},{id:"s2",n:"SSD NVMe 1 TB",p:360,g:1000},{id:"s3",n:"SSD NVMe 2 TB",p:700,g:2000},{id:'s4',n:'SSD NVMe 4 TB',p:1400,g:4000}],
-psu:[{id:"f1",n:"Fonte 500 W 80+ Bronze",p:220,w:500},{id:"f2",n:"Fonte 650 W 80+ Bronze",p:330,w:650},{id:"f3",n:"Fonte 750 W 80+ Gold",p:450,w:750},{id:"f4",n:"Fonte 850 W 80+ Gold",p:600,w:850},{id:'f5',n:'Fonte 1000 W 80+ Gold',p:900,w:1000}],
-cooler:[{id:"o1",n:"Cooler básico",p:90,h:130,t:95},{id:"o2",n:"Torre simples",p:150,h:155,t:150},{id:"o3",n:"Torre dupla",p:260,h:160,t:250},{id:'o4',n:'Water cooler 240 mm',p:420,h:55,t:280}],
-cs:[{id:"k1",n:"Gabinete compacto mATX",p:350,fm:["mATX"],gm:285,hm:155},{id:"k2",n:"Gabinete médio ATX",p:480,fm:["mATX","ATX"],gm:360,hm:170},{id:"k3",n:"Gabinete full tower",p:800,fm:["mATX","ATX"],gm:420,hm:175}]};
+cpu:[
+  {id:"c1",n:"Ryzen 3 4100",p:420,s:"AM4",t:65,k:2},
+  {id:"c2",n:"Ryzen 5 4500",p:480,s:"AM4",t:65,k:2.2},
+  {id:"c3",n:"Ryzen 5 5500",p:500,s:"AM4",t:65,k:2.5},
+  {id:"c4",n:"Ryzen 5 5600",p:650,s:"AM4",t:65,k:3},
+  {id:"c5",n:"Ryzen 7 5700X",p:1050,s:"AM4",t:65,k:3.8},
+  {id:"c6",n:"Ryzen 7 5700X3D",p:1300,s:"AM4",t:105,k:4},
+  {id:"c7",n:"Ryzen 5 7600",p:1050,s:"AM5",t:65,k:3.5},
+  {id:"c8",n:"Ryzen 7 7700X",p:1750,s:"AM5",t:105,k:4.2},
+  {id:"c9",n:"Ryzen 7 7800X3D",p:2400,s:"AM5",t:120,k:5},
+  {id:"c10",n:"Ryzen 9 7900X",p:2300,s:"AM5",t:170,k:4.5},
+  {id:"c11",n:"Ryzen 9 7950X3D",p:3900,s:"AM5",t:120,k:5},
+  {id:"c12",n:"Core i3-12100F",p:450,s:"LGA1700",t:58,k:2},
+  {id:"c13",n:"Core i5-12400F",p:750,s:"LGA1700",t:65,k:3},
+  {id:"c14",n:"Core i5-13400F",p:1100,s:"LGA1700",t:65,k:3.4},
+  {id:"c15",n:"Core i5-13600KF",p:1750,s:"LGA1700",t:125,k:4.2},
+  {id:"c16",n:"Core i5-14600KF",p:1700,s:"LGA1700",t:125,k:4.5},
+  {id:"c17",n:"Core i7-13700KF",p:2350,s:"LGA1700",t:125,k:4.7},
+  {id:"c18",n:"Core i7-14700K",p:2800,s:"LGA1700",t:125,k:5},
+  {id:"c19",n:"Core i9-14900K",p:3500,s:"LGA1700",t:125,k:5}
+],
+mb:[
+  {id:"m1",n:"A320M DDR4",p:350,s:"AM4",r:"DDR4",f:"mATX"},
+  {id:"m2",n:"B450M Gaming",p:520,s:"AM4",r:"DDR4",f:"mATX"},
+  {id:"m3",n:"B550M",p:600,s:"AM4",r:"DDR4",f:"mATX"},
+  {id:"m4",n:"B550 ATX",p:800,s:"AM4",r:"DDR4",f:"ATX"},
+  {id:"m5",n:"A620M",p:600,s:"AM5",r:"DDR5",f:"mATX"},
+  {id:"m6",n:"B650M",p:850,s:"AM5",r:"DDR5",f:"mATX"},
+  {id:"m7",n:"B650 ATX",p:1150,s:"AM5",r:"DDR5",f:"ATX"},
+  {id:"m8",n:"X670E ATX",p:2100,s:"AM5",r:"DDR5",f:"ATX"},
+  {id:"m9",n:"H610M DDR4",p:500,s:"LGA1700",r:"DDR4",f:"mATX"},
+  {id:"m10",n:"B660M DDR4",p:720,s:"LGA1700",r:"DDR4",f:"mATX"},
+  {id:"m11",n:"B760M DDR4",p:700,s:"LGA1700",r:"DDR4",f:"mATX"},
+  {id:"m12",n:"B760M DDR5",p:850,s:"LGA1700",r:"DDR5",f:"mATX"},
+  {id:"m13",n:"Z690 ATX DDR5",p:1300,s:"LGA1700",r:"DDR5",f:"ATX"},
+  {id:"m14",n:"Z790 ATX DDR5",p:1500,s:"LGA1700",r:"DDR5",f:"ATX"}
+],
+ram:[
+  {id:"r1",n:"8 GB DDR4 3200",p:120,r:"DDR4",g:8},
+  {id:"r2",n:"16 GB DDR4 3200 (1x16)",p:190,r:"DDR4",g:16},
+  {id:"r3",n:"16 GB DDR4 3200 (2x8)",p:200,r:"DDR4",g:16},
+  {id:"r4",n:"32 GB DDR4 3200 (2x16)",p:380,r:"DDR4",g:32},
+  {id:"r5",n:"64 GB DDR4 3200 (2x32)",p:760,r:"DDR4",g:64},
+  {id:"r6",n:"16 GB DDR5 5600 (1x16)",p:280,r:"DDR5",g:16},
+  {id:"r7",n:"16 GB DDR5 5600 (2x8)",p:320,r:"DDR5",g:16},
+  {id:"r8",n:"32 GB DDR5 6000 (2x16)",p:600,r:"DDR5",g:32},
+  {id:"r9",n:"64 GB DDR5 6000 (2x32)",p:1150,r:"DDR5",g:64},
+  {id:"r10",n:"96 GB DDR5 6000 (2x48)",p:1750,r:"DDR5",g:96}
+],
+gpu:[
+  {id:"g1",n:"GTX 1650 4GB",p:850,t:75,l:210,k:1.2},
+  {id:"g2",n:"RX 6600 8GB",p:1300,t:132,l:240,k:2.5},
+  {id:"g3",n:"RTX 3060 12GB",p:1700,t:170,l:242,k:2.7},
+  {id:"g4",n:"RX 7600 8GB",p:1500,t:165,l:240,k:2.8},
+  {id:"g5",n:"RTX 4060 8GB",p:1900,t:115,l:240,k:3},
+  {id:"g6",n:"RTX 4060 Ti 8GB",p:2500,t:160,l:250,k:3.5},
+  {id:"g7",n:"RX 6750 XT 12GB",p:2200,t:230,l:280,k:3.6},
+  {id:"g8",n:"RX 7700 XT 12GB",p:3100,t:245,l:267,k:3.8},
+  {id:"g9",n:"RTX 4070 12GB",p:3600,t:200,l:245,k:4},
+  {id:"g10",n:"RX 7800 XT 16GB",p:3600,t:263,l:310,k:4.2},
+  {id:"g11",n:"RTX 4070 Super 12GB",p:4300,t:220,l:300,k:4.5},
+  {id:"g12",n:"RTX 4070 Ti Super 16GB",p:5600,t:285,l:315,k:4.7},
+  {id:"g13",n:"RX 7900 XTX 24GB",p:6900,t:355,l:320,k:4.8},
+  {id:"g14",n:"RTX 4080 Super 16GB",p:7500,t:320,l:310,k:4.9},
+  {id:"g15",n:"RTX 4090 24GB",p:14500,t:450,l:340,k:5}
+],
+ssd:[
+  {id:"s1",n:"SSD SATA 480 GB",p:180,g:480},
+  {id:"s2",n:"SSD NVMe 500 GB",p:230,g:500},
+  {id:"s3",n:"SSD NVMe 1 TB",p:360,g:1000},
+  {id:"s4",n:"SSD NVMe 2 TB",p:700,g:2000},
+  {id:"s5",n:"SSD NVMe 4 TB Gen4",p:1400,g:4000}
+],
+psu:[
+  {id:"f1",n:"Fonte 400 W 80+ White",p:180,w:400},
+  {id:"f2",n:"Fonte 500 W 80+ Bronze",p:220,w:500},
+  {id:"f3",n:"Fonte 600 W 80+ Bronze",p:290,w:600},
+  {id:"f4",n:"Fonte 650 W 80+ Bronze",p:330,w:650},
+  {id:"f5",n:"Fonte 750 W 80+ Gold",p:450,w:750},
+  {id:"f6",n:"Fonte 850 W 80+ Gold",p:600,w:850},
+  {id:"f7",n:"Fonte 1000 W 80+ Gold",p:900,w:1000}
+],
+cooler:[
+  {id:"o1",n:"Cooler básico OEM",p:50,h:120,t:65},
+  {id:"o2",n:"Cooler básico com LED",p:90,h:130,t:95},
+  {id:"o3",n:"Torre simples (1 fan)",p:150,h:155,t:150},
+  {id:"o4",n:"Torre dupla (2 fans)",p:260,h:160,t:250},
+  {id:"o5",n:"Water Cooler 120mm",p:250,h:52,t:180},
+  {id:"o6",n:"Water Cooler 240mm",p:420,h:55,t:280},
+  {id:"o7",n:"Water Cooler 360mm",p:650,h:55,t:350}
+],
+cs:[
+  {id:"k1",n:"Gabinete Office Compacto",p:200,fm:["mATX"],gm:250,hm:150},
+  {id:"k2",n:"Gabinete Gamer com Vidro mATX",p:320,fm:["mATX"],gm:290,hm:160},
+  {id:"k3",n:"Gabinete Gamer Médio ATX",p:480,fm:["mATX","ATX"],gm:360,hm:170},
+  {id:"k4",n:"Gabinete High-Airflow ATX",p:590,fm:["mATX","ATX"],gm:400,hm:175},
+  {id:"k5",n:"Gabinete Full Tower Premium",p:850,fm:["mATX","ATX"],gm:430,hm:185}
+]};
+
 const CATS=[["cpu","Processador"],["mb","Placa-mãe"],["ram","Memória"],["gpu","Placa de vídeo"],["ssd","Armazenamento"],["psu","Fonte"],["cooler","Cooler"],["cs","Gabinete"]];
 const PER=[{id:'p1',k:'Monitor',b:'LG',n:'UltraGear 24GN60R 24 pol. 1080p 144 Hz',p:800},{id:'p2',k:'Monitor',b:'AOC',n:'Hero 24G2 24 pol. 1080p 144 Hz',p:900},{id:'p3',k:'Monitor',b:'Samsung',n:'Odyssey G5 27 pol. 1440p 144 Hz',p:1500},{id:'p4',k:'Monitor',b:'LG',n:'UltraGear 27GP850 27 pol. 1440p 165 Hz',p:1900},{id:'p5',k:'Monitor',b:'Gigabyte',n:'M28U 28 pol. 4K 144 Hz',p:3000},{id:'p6',k:'Teclado',b:'Redragon',n:'Kumara K552 TKL mecânico',p:200},{id:'p7',k:'Teclado',b:'HyperX',n:'Alloy Origins 60 mecânico',p:500},{id:'p8',k:'Teclado',b:'Keychron',n:'K2 75% sem fio',p:700},{id:'p9',k:'Teclado',b:'Logitech',n:'G Pro X TKL',p:900},{id:'p10',k:'Mouse',b:'Redragon',n:'Cobra M711',p:110},{id:'p11',k:'Mouse',b:'Logitech',n:'G502 Hero',p:330},{id:'p12',k:'Mouse',b:'Razer',n:'DeathAdder V3',p:500},{id:'p13',k:'Mouse',b:'Logitech',n:'G Pro X Superlight 2 sem fio',p:900},{id:'p14',k:'Headset',b:'HyperX',n:'Cloud Stinger 2',p:250},{id:'p15',k:'Headset',b:'Razer',n:'BlackShark V2 X',p:330},{id:'p16',k:'Headset',b:'Logitech',n:'G435 sem fio',p:350},{id:'p17',k:'Headset',b:'HyperX',n:'Cloud III Wireless',p:900},{id:'p18',k:'Mousepad',b:'Redragon',n:'Flick L',p:60},{id:'p19',k:'Mousepad',b:'Razer',n:'Gigantus V2 Large',p:130},{id:'p20',k:'Mousepad',b:'Logitech',n:'G840 XL',p:350},{id:'p21',k:'Webcam',b:'Logitech',n:'C920 HD Pro',p:350},{id:'p22',k:'Webcam',b:'Logitech',n:'Brio 300',p:400},{id:'p23',k:'Microfone',b:'HyperX',n:'SoloCast',p:300},{id:'p24',k:'Microfone',b:'HyperX',n:'QuadCast',p:800},{id:'p25',k:'Microfone',b:'Blue',n:'Yeti',p:900},{id:'p26',k:'Cadeira',b:'Cougar',n:'Argo',p:1100},{id:'p27',k:'Cadeira',b:'ThunderX3',n:'EC3',p:1300}];
-const PRE={a:['c1','m1','r2','g2','s2','f2','o1','k1'],b:['c3','m2','r4','g5','s2','f3','o2','k2'],c:['c6','m5','r4','g3','s3','f3','o3','k2']};
+const PRE={a:['c4','m3','r3','g5','s3','f4','o3','k3'],b:['c7','m6','r8','g10','s3','f5','o4','k3'],c:['c10','m8','r9','g12','s4','f6','o6','k4']};
 const sel={};let why={},S=null;
 const get=c=>D[c].find(x=>x.id===sel[c]);
 
@@ -147,11 +244,20 @@ function check(){
 }
 function score(){
   const c=get("cpu"),g=get("gpu"),r=get("ram"),s=get("ssd");if(!(c&&g&&r&&s))return null;
-  const u=$("#uso").value,w={g1080:[.3,.5,.1,.1],g1440:[.25,.6,.1,.05],ed:[.45,.3,.2,.05]}[u],N=[];
+  const u=$("#uso").value;
+  const weights={
+    g1080:[.3,.5,.1,.1],
+    g1440:[.25,.6,.1,.05],
+    g4k:[.15,.75,.05,.05],
+    ed:[.4,.3,.2,.1],
+    stream:[.3,.4,.2,.1]
+  };
+  const w=weights[u]||[.3,.5,.1,.1];
+  const N=[];
   const v=(c.k*w[0]+g.k*w[1]+Math.min(r.g/32,1)*5*w[2]+Math.min(s.g/1000,1)*5*w[3])/5*100;
   if(c.k-g.k>=1.5)N.push("A placa de vídeo limita o conjunto.");
   if(g.k-c.k>=1.5)N.push("A CPU pode limitar a placa de vídeo.");
-  if(u==="ed"&&r.g<32)N.push("Para edição, 32 GB de memória dá mais folga.");
+  if((u==="ed"||u==="stream")&&r.g<32)N.push("Para este uso, 32 GB de memória ou mais dá muito mais folga.");
   if(s.g<500)N.push("500 GB enche rápido com jogos e projetos.");
   return{v:Math.round(v),N}
 }
@@ -212,7 +318,7 @@ async function pers(){
 }
 
 build();upd();
-document.querySelectorAll('[data-pre]').forEach(b=>b.onclick=()=>{const k=b.dataset.pre;CATS.forEach(([c],i)=>sel[c]=PRE[k][i]);why={};$('#uso').value={a:'g1080',b:'g1440',c:'ed'}[k];$('#orc').value={a:5000,b:8500,c:8500}[k];upd()});
+document.querySelectorAll('[data-pre]').forEach(b=>b.onclick=()=>{const k=b.dataset.pre;CATS.forEach(([c],i)=>sel[c]=PRE[k][i]);why={};$('#uso').value={a:'g1080',b:'g1440',c:'ed'}[k];$('#orc').value={a:5000,b:8500,c:12000}[k];upd()});
 $('#orc').addEventListener('input',upd);
 $('#bc').onclick=async()=>{try{await navigator.clipboard.writeText(summary());$('#st1').textContent='Lista copiada.'}catch(e){$('#ex').textContent=summary();$('#st1').textContent='Não consegui copiar aqui; a lista está no painel Pergunte ao FORJA.'}};
 $("#uso").addEventListener("change",upd);
@@ -234,7 +340,7 @@ function makeAI(){
   S.json=async t=>{const x=await gen(t+'\n\nResponda somente com JSON válido, sem markdown.');const m=x.match(/\{[\s\S]*\}/);if(!m)throw new Error('A IA não devolveu JSON. Tente de novo.');return JSON.parse(m[0])};
   return S}
 $('#cp').innerHTML=Object.entries(AIP).map(([k,v])=>`<option value="${k}">${v.n}</option>`).join('');
-const hint=()=>$('#chint').textContent=AIP[$('#cp').value].h;
+const hint=()=>$('#chint').textContent=AIP[$('#cp==')?$('#cp').value:$('#cp'].value].h || AIP[$('#cp').value].h;
 const c0=cfg();if(c0.p&&AIP[c0.p])$('#cp').value=c0.p;$('#ck').value=c0.key||'';$('#cm').value=c0.model||'';hint();
 $('#cp').onchange=hint;$('#bcfg').onclick=()=>$('#cfg').hidden=!$('#cfg').hidden;
 $('#cs').onclick=()=>{try{localStorage.setItem('forja-ai',JSON.stringify({p:$('#cp').value,key:$('#ck').value.trim(),model:$('#cm').value.trim()}))}catch(e){}$('#cfg').hidden=true;$('#st1').textContent='IA conectada. Pode usar os botões de IA.'};
