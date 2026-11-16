@@ -216,7 +216,7 @@ document.querySelectorAll('[data-pre]').forEach(b=>b.onclick=()=>{const k=b.data
 $('#orc').addEventListener('input',upd);
 $('#bc').onclick=async()=>{try{await navigator.clipboard.writeText(summary());$('#st1').textContent='Lista copiada.'}catch(e){$('#ex').textContent=summary();$('#st1').textContent='Não consegui copiar aqui; a lista está no painel Pergunte ao FORJA.'}};
 $("#uso").addEventListener("change",upd);
-const AIP={gemini:{n:'Gemini (grátis)',m:'gemini-2.5-flash',h:'Grátis: crie a chave em aistudio.google.com/apikey e cole aqui.'},openrouter:{n:'OpenRouter (modelos grátis)',m:'openrouter/free',h:'Grátis: crie a chave em openrouter.ai/keys. Use modelos terminados em :free.'},openai:{n:'ChatGPT (OpenAI)',m:'gpt-4o-mini',h:'A API da OpenAI é paga: precisa de crédito na conta, mesmo com o ChatGPT gratuito.'},claude:{n:'Claude (Anthropic)',m:'claude-haiku-5-5',h:'A API da Anthropic é paga: precisa de crédito na conta.'}};
+const AIP={gemini:{n:'Gemini (grátis)',m:'gemini-2.5-flash',h:'Grátis: crie a chave em aistudio.google.com/apikey e cole aqui.'},openrouter:{n:'OpenRouter (modelos grátis)',m:'meta-llama/llama-3.3-70b-instruct:free',h:'Grátis: crie a chave em openrouter.ai/keys. Use modelos terminados em :free.'},openai:{n:'ChatGPT (OpenAI)',m:'gpt-4o-mini',h:'A API da OpenAI é paga: precisa de crédito na conta, mesmo com o ChatGPT gratuito.'},claude:{n:'Claude (Anthropic)',m:'claude-haiku-5-5',h:'A API da Anthropic é paga: precisa de crédito na conta.'}};
 const cfg=()=>{try{return JSON.parse(localStorage.getItem('forja-ai'))||{}}catch(e){return{}}};
 async function gen(text){
   const c=cfg();if(!c.key||!AIP[c.p]){const e=new Error('no_key');e.code='no_key';throw e}
@@ -250,11 +250,222 @@ $('#bi').onclick=async()=>{ip.prompt();await ip.userChoice;$('#bi').hidden=true}
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js');
 (async()=>{
   S=makeAI();
+  if(!S){["#bm","#bx","#bq","#bp","#bu"].forEach(i=>$(i).disabled=true);$("#st1").textContent="A IA não está disponível nesta visualização. O montador e a checagem de compatibilidade funcionam normalmente.";return}
   $("#bm").onclick=montar;$("#bp").onclick=pers;
   $("#bu").onclick=()=>ask("Com orçamento total de "+P(+$("#orc").value)+", sugira até 3 upgrades que mais melhoram o desempenho para o uso escolhido, com o custo de cada um e o que muda. Se a build já passou do orçamento, sugira onde economizar.");
   $("#bx").onclick=()=>ask("Explique em até 6 frases se esta build está boa para o uso escolhido, por que, e o que eu trocaria com mais ou menos dinheiro.");
   $("#bq").onclick=()=>{const q=$("#q").value.trim();if(q)ask("Pergunta: "+q)};
   $("#q").addEventListener("keydown",e=>{if(e.key==="Enter")$("#bq").click()});
+})();
+</script>
+<script>
+/* FORJA add-on: mais pecas + todas as IAs */
+(()=>{
+const T={cpu:(a,i)=>({id:i,n:a[0],p:+a[1],s:a[2],t:+a[3],k:+a[4]}),mb:(a,i)=>({id:i,n:a[0],p:+a[1],s:a[2],r:a[3],f:a[4]}),ram:(a,i)=>({id:i,n:a[0],p:+a[1],r:a[2],g:+a[3]}),gpu:(a,i)=>({id:i,n:a[0],p:+a[1],t:+a[2],l:+a[3],k:+a[4]}),ssd:(a,i)=>({id:i,n:a[0],p:+a[1],g:+a[2]}),psu:(a,i)=>({id:i,n:'Fonte '+a[0],p:+a[1],w:+a[2]}),cooler:(a,i)=>({id:i,n:a[0],p:+a[1],h:+a[2],t:+a[3]}),cs:(a,i)=>({id:i,n:a[0],p:+a[1],fm:a[2].split('/'),gm:+a[3],hm:+a[4]})};
+const A=(k,t)=>t.trim().split('\n').forEach(l=>{const a=l.split(',').map(x=>x.trim());D[k].push(T[k](a,k+'_'+D[k].length))});
+A('cpu',`Ryzen 5 3600,420,AM4,65,2.5
+Ryzen 5 5600X,800,AM4,65,3.5
+Ryzen 5 5600GT,700,AM4,65,3
+Ryzen 7 5700X,1000,AM4,65,3.5
+Ryzen 7 5800X3D,1700,AM4,105,4
+Ryzen 9 5900X,1300,AM4,105,4
+Ryzen 9 5950X,2000,AM4,105,4.5
+Ryzen 5 7500F,900,AM5,65,3.5
+Ryzen 7 7700,1650,AM5,65,4
+Ryzen 7 7700X,1700,AM5,105,4
+Ryzen 9 7950X,3300,AM5,170,5
+Ryzen 9 7950X3D,3900,AM5,120,5
+Ryzen 5 9600X,1500,AM5,65,4
+Ryzen 7 9700X,2100,AM5,65,4.5
+Ryzen 7 9800X3D,3200,AM5,120,5
+Ryzen 9 9900X,2600,AM5,120,4.5
+Ryzen 9 9950X,3800,AM5,170,5
+Core i3-13100F,500,LGA1700,58,2
+Core i5-13400F,1000,LGA1700,65,3.5
+Core i5-13600K,1700,LGA1700,125,4.5
+Core i5-14400F,1100,LGA1700,65,3.5
+Core i5-14500,1400,LGA1700,65,4
+Core i7-13700K,2400,LGA1700,125,4.5
+Core i7-14700KF,2600,LGA1700,125,5
+Core i9-13900K,3000,LGA1700,125,5
+Core i9-14900K,3500,LGA1700,125,5
+Core Ultra 5 245K,1800,LGA1851,125,4.5
+Core Ultra 7 265K,2700,LGA1851,125,5
+Core Ultra 9 285K,3900,LGA1851,125,5`);
+A('mb',`A520M,450,AM4,DDR4,mATX
+B450M,500,AM4,DDR4,mATX
+X570 ATX,1300,AM4,DDR4,ATX
+B650E ATX,1400,AM5,DDR5,ATX
+X670E ATX,2200,AM5,DDR5,ATX
+B850M,1300,AM5,DDR5,mATX
+B850 ATX,1600,AM5,DDR5,ATX
+X870E ATX,2800,AM5,DDR5,ATX
+H610M DDR4,450,LGA1700,DDR4,mATX
+B660M DDR4,600,LGA1700,DDR4,mATX
+B760 ATX DDR4,900,LGA1700,DDR4,ATX
+B760 ATX DDR5,1000,LGA1700,DDR5,ATX
+Z690 ATX DDR4,1300,LGA1700,DDR4,ATX
+Z790M DDR5,1300,LGA1700,DDR5,mATX
+H810M,700,LGA1851,DDR5,mATX
+B860M,1000,LGA1851,DDR5,mATX
+B860 ATX,1300,LGA1851,DDR5,ATX
+Z890 ATX,2400,LGA1851,DDR5,ATX`);
+A('ram',`8 GB DDR4 3200,110,DDR4,8
+16 GB DDR4 3600,230,DDR4,16
+32 GB DDR4 3600,420,DDR4,32
+128 GB DDR4 3200,1500,DDR4,128
+8 GB DDR5 5200,150,DDR5,8
+16 GB DDR5 5600,300,DDR5,16
+32 GB DDR5 5600,550,DDR5,32
+32 GB DDR5 6400,700,DDR5,32
+48 GB DDR5 6400,1000,DDR5,48
+96 GB DDR5 6000,1900,DDR5,96
+128 GB DDR5 5600,2800,DDR5,128`);
+A('gpu',`GTX 1650,900,75,200,1.5
+GTX 1660 Super,1100,125,230,2
+RX 6500 XT,800,107,200,1.5
+RX 6650 XT,1500,180,240,2.5
+RX 6700 XT,2000,230,267,3
+RX 6750 XT,2200,250,267,3.2
+RX 6800,2800,250,267,3.5
+RX 6800 XT,3200,300,267,4
+RX 7600 XT,1800,190,250,2.5
+RX 7700 XT,2900,245,280,3.5
+RX 7900 GRE,3800,260,287,4.2
+RX 7900 XTX,6500,355,287,5
+RX 9060 XT,2300,160,250,3.3
+RX 9070,3800,220,300,4.2
+RX 9070 XT,4500,304,320,4.7
+RTX 3050,1300,130,240,2
+RTX 3060,1800,170,242,3
+RTX 3060 Ti,2200,200,242,3.5
+RTX 3070,2800,220,242,3.8
+RTX 3080,3800,320,285,4.3
+RTX 4070 Ti,5200,285,300,4.7
+RTX 4070 Ti Super,6000,285,310,4.8
+RTX 5050,1900,130,240,2.7
+RTX 5060,2300,145,240,3.3
+RTX 5060 Ti,3000,180,250,3.8
+RTX 5070,4300,250,300,4.4
+RTX 5070 Ti,6200,300,300,4.9
+RTX 5080,8800,360,310,5
+RTX 5090,18000,575,340,5
+Intel Arc A750,1300,225,260,2.5
+Intel Arc B570,1400,150,240,2.3
+Intel Arc B580,1600,190,272,2.8`);
+A('ssd',`SSD SATA 480 GB,200,480
+SSD SATA 1 TB,330,1000
+SSD NVMe 250 GB,150,250
+SSD NVMe 1 TB Gen4,400,1000
+SSD NVMe 2 TB Gen4,750,2000
+SSD NVMe 1 TB Gen5,700,1000
+SSD NVMe 2 TB Gen5,1300,2000
+SSD NVMe 8 TB,3200,8000
+HD 1 TB 7200 rpm,250,1000
+HD 2 TB 7200 rpm,380,2000
+HD 4 TB 7200 rpm,600,4000`);
+A('psu',`450 W,180,450
+550 W 80+ Bronze,250,550
+600 W 80+ Bronze,280,600
+700 W 80+ Bronze,360,700
+650 W 80+ Gold,420,650
+750 W 80+ Platinum,600,750
+850 W 80+ Platinum,800,850
+1000 W 80+ Platinum,1200,1000
+1200 W 80+ Platinum,1700,1200
+1600 W 80+ Titanium,2800,1600`);
+A('cooler',`Cooler box,50,70,65
+Torre 120 mm econômica,100,150,130
+Torre 120 mm dupla heatpipe,160,155,180
+Torre dupla 140 mm,300,165,250
+Water cooler 120 mm,300,55,200
+Water cooler 280 mm,520,55,300
+Water cooler 360 mm,650,55,350
+Water cooler 360 mm com tela,1100,55,350`);
+A('cs',`Gabinete micro ATX básico,200,mATX,260,150
+Gabinete mid tower básico,250,mATX/ATX,330,160
+Gabinete mid tower airflow,450,mATX/ATX,380,165
+Gabinete cubo mATX,500,mATX,350,160
+Gabinete vidro duplo,600,mATX/ATX,400,170
+Gabinete premium,900,mATX/ATX,420,175
+Gabinete full tower grande,1500,mATX/ATX,450,185`);
+`Monitor,Samsung,Odyssey G3 24 pol. 1080p 144 Hz,850
+Monitor,Gigabyte,GS27F 27 pol. 1080p 165 Hz,950
+Monitor,Dell,S2721DGF 27 pol. 1440p 165 Hz,2000
+Monitor,ASUS,TUF VG27AQ 27 pol. 1440p 165 Hz,1900
+Monitor,MSI,MAG 274QRF-QD 27 pol. 1440p 165 Hz,2000
+Monitor,ASUS,ROG Swift PG27AQDM OLED 27 pol. 1440p 240 Hz,5500
+Monitor,Samsung,Odyssey G9 49 pol. ultrawide,6500
+Teclado,Logitech,K120 com fio,80
+Teclado,Corsair,K70 RGB mecânico,900
+Teclado,Razer,BlackWidow V4 X,900
+Teclado,SteelSeries,Apex Pro TKL,1500
+Teclado,Keychron,Q1 75% alumínio,1100
+Teclado,Logitech,MX Keys sem fio,700
+Mouse,Logitech,G305 sem fio,250
+Mouse,SteelSeries,Rival 3,180
+Mouse,Corsair,Katar Pro,150
+Mouse,Razer,Viper V3 Pro sem fio,1000
+Mouse,Logitech,MX Master 3S,650
+Mouse,Pulsar,X2 sem fio,700
+Headset,Logitech,G Pro X 2 sem fio,1300
+Headset,SteelSeries,Arctis Nova 7 sem fio,1100
+Headset,Corsair,HS80 sem fio,700
+Headset,HyperX,Cloud Alpha,600
+Headset,Razer,Kraken V4 X,350
+Mousepad,SteelSeries,QcK Heavy,150
+Mousepad,Corsair,MM300 Pro,130
+Webcam,Razer,Kiyo Pro,900
+Webcam,Logitech,StreamCam,700
+Microfone,Rode,NT-USB Mini,800
+Microfone,Shure,MV7+,1800
+Microfone,Elgato,Wave:3,1100
+Microfone,Fifine,AM8,300
+Cadeira,DXRacer,Drifting,1800
+Cadeira,Corsair,T3 Rush,1900`.split('\n').forEach(l=>{const a=l.split(',').map(x=>x.trim());PER.push({id:'px'+PER.length,k:a[0],b:a[1],n:a[2],p:+a[3]})});
+const fin=()=>{Object.keys(D).forEach(k=>D[k].sort((a,b)=>a.p-b.p));build();upd()};fin();
+/* catalogo extra opcional: arquivo catalog.json na mesma pasta */
+fetch('catalog.json').then(r=>r.ok?r.json():null).then(x=>{if(!x)return;Object.keys(x).forEach(k=>{if(D[k])D[k].push(...x[k])});if(x.PER)PER.push(...x.PER);fin()}).catch(()=>{});
+
+/* IAs: Gemini, Claude e qualquer API compativel com OpenAI */
+const O=(n,m,u)=>[n,m,u],AIX={
+gemini:O('Gemini (Google) - plano grátis','gemini-2.5-flash','g'),
+claude:O('Claude (Anthropic)','claude-haiku-5-5','a'),
+openai:O('ChatGPT (OpenAI)','gpt-4o-mini','https://api.openai.com/v1/chat/completions'),
+xai:O('Grok (xAI)','grok-3-mini','https://api.x.ai/v1/chat/completions'),
+openrouter:O('OpenRouter (vários modelos, tem grátis)','meta-llama/llama-3.3-70b-instruct:free','https://openrouter.ai/api/v1/chat/completions'),
+groq:O('Groq (plano grátis)','llama-3.3-70b-versatile','https://api.groq.com/openai/v1/chat/completions'),
+mistral:O('Mistral','mistral-small-latest','https://api.mistral.ai/v1/chat/completions'),
+deepseek:O('DeepSeek','deepseek-chat','https://api.deepseek.com/chat/completions'),
+perplexity:O('Perplexity','sonar','https://api.perplexity.ai/chat/completions'),
+together:O('Together AI','meta-llama/Llama-3.3-70B-Instruct-Turbo','https://api.together.xyz/v1/chat/completions'),
+fireworks:O('Fireworks AI','accounts/fireworks/models/llama-v3p3-70b-instruct','https://api.fireworks.ai/inference/v1/chat/completions'),
+cerebras:O('Cerebras (plano grátis)','llama-3.3-70b','https://api.cerebras.ai/v1/chat/completions'),
+nvidia:O('NVIDIA NIM','meta/llama-3.3-70b-instruct','https://integrate.api.nvidia.com/v1/chat/completions'),
+hf:O('Hugging Face','meta-llama/Llama-3.3-70B-Instruct','https://router.huggingface.co/v1/chat/completions'),
+cohere:O('Cohere','command-r-plus-08-2024','https://api.cohere.ai/compatibility/v1/chat/completions'),
+kimi:O('Kimi (Moonshot)','kimi-k2-0905-preview','https://api.moonshot.ai/v1/chat/completions'),
+qwen:O('Qwen (Alibaba)','qwen-plus','https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions'),
+glm:O('GLM (Zhipu)','glm-4-flash','https://open.bigmodel.cn/api/paas/v4/chat/completions'),
+custom:O('Outra IA (qualquer API compatível com OpenAI)','','')};
+const KS='forja-ai2',st=()=>{try{return JSON.parse(localStorage.getItem(KS))||{}}catch(e){return{}}};
+gen=async function(text){
+  const s=st(),p=s.p,x=AIX[p],kk=(s.k||{})[p],m=(s.m||{})[p]||(x&&x[1]);
+  if(!x||!kk){const e=new Error('no_key');e.code='no_key';throw e}
+  const H={'Content-Type':'application/json'};let u=x[2],b;
+  if(u==='g'){u='https://generativelanguage.googleapis.com/v1beta/models/'+m+':generateContent';H['x-goog-api-key']=kk;b={contents:[{parts:[{text}]}]}}
+  else if(u==='a'){u='https://api.anthropic.com/v1/messages';H['x-api-key']=kk;H['anthropic-version']='2023-06-01';H['anthropic-dangerous-direct-browser-access']='true';b={model:m,max_tokens:2000,messages:[{role:'user',content:text}]}}
+  else{if(p==='custom')u=s.u;if(!u)throw new Error('Informe a URL da API em Configurar IA.');if(!m)throw new Error('Informe o nome do modelo em Configurar IA.');H.Authorization='Bearer '+kk;b={model:m,messages:[{role:'user',content:text}]}}
+  let r;try{r=await fetch(u,{method:'POST',headers:H,body:JSON.stringify(b)})}catch(e){throw new Error('O navegador não conseguiu falar com essa IA (ela pode bloquear acesso direto do navegador, ou você está sem internet). Tente OpenRouter ou outra.')}
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok){const e=new Error(String((j.error&&(j.error.message||j.error))||j.message||('Erro '+r.status)));if(r.status===429)e.code='rate_limited';throw e}
+  return u.includes('generativelanguage')?(j.candidates?.[0]?.content?.parts||[]).map(y=>y.text).join(''):j.content?(j.content||[]).map(y=>y.text).join(''):(j.choices?.[0]?.message?.content||'')
+};
+const cp=$('#cp');cp.innerHTML=Object.entries(AIX).map(([k,v])=>`<option value="${k}">${v[0]}</option>`).join('');
+$('#cm').parentElement.insertAdjacentHTML('afterend','<label class="f" id="cul" hidden>URL da API<input id="cu" style="width:260px" placeholder="https://.../v1/chat/completions"></label>');
+const load=()=>{const s=st(),p=cp.value;$('#ck').value=(s.k||{})[p]||'';$('#cm').value=(s.m||{})[p]||'';$('#cm').placeholder=AIX[p][1];$('#cu').value=s.u||'';$('#cul').hidden=p!=='custom';$('#chint').textContent='Crie a chave no site da própria IA. Se o modelo padrão não existir mais, copie o nome de um modelo atual do painel deles e cole em Modelo.'};
+const s0=st();if(s0.p&&AIX[s0.p])cp.value=s0.p;load();cp.onchange=load;
+$('#cs').onclick=()=>{const s=st(),p=cp.value;s.p=p;s.k={...s.k,[p]:$('#ck').value.trim()};s.m={...s.m,[p]:$('#cm').value.trim()};if(p==='custom')s.u=$('#cu').value.trim();try{localStorage.setItem(KS,JSON.stringify(s))}catch(e){}$('#cfg').hidden=true;$('#st1').textContent='IA conectada: '+AIX[p][0]+'.'};
 })();
 </script>
 </body>
