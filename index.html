@@ -216,7 +216,6 @@ button:disabled{opacity:.45;cursor:not-allowed}
 <script>
 const $=s=>document.querySelector(s),P=n=>n.toLocaleString("pt-BR",{style:"currency",currency:"BRL",maximumFractionDigits:0});
 
-// Base de dados expandida Ultimate
 let D = {
   cpu:[
     {id:"c1",n:"Ryzen 3 4100",p:420,s:"AM4",t:65,k:2},
@@ -324,7 +323,6 @@ const PRE={a:['c4','m3','r3','g5','s3','f4','o3','k3'],b:['c7','m6','r8','g10','
 const sel={};let why={},S=null;
 const get=c=>D[c].find(x=>x.id===sel[c]);
 
-// Carregar peças personalizadas salvas no localStorage
 function loadCustomParts(){
   try{
     const saved = JSON.parse(localStorage.getItem('forja-custom')||'{}');
@@ -345,7 +343,7 @@ function check(){
   if(m&&r&&m.r!==r.r)bad(`A placa-mãe aceita ${m.r}, mas a memória é ${r.r}.`,"mb","ram");
   if(m&&k&&!k.fm.includes(m.f))bad(`A placa ${m.f} não cabe neste gabinete.`,"mb","cs");
   if(g&&k&&g.l>k.gm)bad(`A placa de vídeo tem ${g.l} mm e o gabinete aceita até ${k.gm} mm.`,"gpu","cs");
-  if(o&&k&&o.h>k.hm)bad(`O cooler tem ${o.h} mm de altura e o gabinete aceita até ${k.hm} mm.`,"cooler","cs");
+  if(o&&k&&o.h>k.hm)bad(`O cooler tem ${o.h} mm de altura e o gabinete aceita até ${k.hm} mm.`,"cooler","cpu");
   if(o&&c&&o.t<c.t)bad(`O cooler dissipa ${o.t} W e a CPU chega a ${c.t} W.`,"cooler","cpu");
   const need=(c?c.t:0)+(g?g.t:0)+((c||g)?100:0);
   if(f&&need){if(f.w<need)bad(`A fonte de ${f.w} W não cobre o consumo estimado de ${need} W.`,"psu");else if(f.w<need*1.3)W.push(`Fonte com pouca folga: ${f.w} W para ${need} W. O ideal é ter 30% de margem.`)}
@@ -390,7 +388,6 @@ function upd(){
   $("#pw").textContent=r.need+" W";$("#rl").style.width=Math.min(pct,100)+"%";$("#rl").style.background=pct>100?"var(--er)":pct>77?"var(--am)":"var(--cy)";
   $("#pwt").textContent=f?`Fonte de ${f.w} W`:"Escolha uma fonte para ver a folga.";
 
-  // Atualizar estimativa de FPS dinâmico
   const g=get("gpu"),c=get("cpu");
   if(g&&c){
     const gk=g.k, ck=c.k;
@@ -404,15 +401,9 @@ function upd(){
   }
 }
 
-const summary=()=>CATS.map(([k,l])=>`${l}: ${get(k)?get(k).n+" ("+P(get(k).p)+")":"não escolhida"}`).join("
-")+`
-Total: ${P(total())}
-Uso: ${$("#uso").selectedOptions[0].text}
-Problemas do motor de regras: ${[...check().E,...check().W].join(" | ")||"nenhum"}`;
-const catalog=()=>"Legenda: s=soquete, t=consumo/TDP em W, r=tipo de RAM, f=formato da placa, g=GB, l=comprimento da GPU mm, fm=formatos aceitos, gm=comprimento máximo da GPU mm, h=altura do cooler mm, hm=altura máxima do cooler mm, w=potência da fonte W, k=nível de desempenho de 1 a 5.
-"+CATS.map(([k])=>D[k].map(x=>`${x.id}|${k}|${x.n}|${x.p}|`+Object.entries(x).filter(([a])=>!["id","n","p"].includes(a)).map(([a,b])=>a+"="+b).join(",")).join("
-")).join("
-");
+const summary=()=>CATS.map(([k,l])=>`${l}: ${get(k)?get(k).n+" ("+P(get(k).p)+")":"não escolhida"}`).join("\n")+`\nTotal: ${P(total())}\nUso: ${$("#uso").selectedOptions[0].text}\nProblemas do motor de regras: ${[...check().E,...check().W].join(" | ")||"nenhum"}`;
+const catalog=()=>"Legenda: s=soquete, t=consumo/TDP em W, r=tipo de RAM, f=formato da placa, g=GB, l=comprimento da GPU mm, fm=formatos aceitos, gm=comprimento máximo da GPU mm, h=altura do cooler mm, hm=altura máxima do cooler mm, w=potência da fonte W, k=nível de desempenho de 1 a 5.\n"+CATS.map(([k])=>D[k].map(x=>`${x.id}|${k}|${x.n}|${x.p}|`+Object.entries(x).filter(([a])=>!["id","n","p"].includes(a)).map(([a,b])=>a+"="+b).join(",")).join("\n")).join("\n");
+
 function err(e,el){el.textContent=e&&e.code==="no_key"?"Antes, conecte uma IA em Configurar IA (leva 1 minuto).":e&&e.message&&!e.code?"Erro da IA: "+e.message.slice(0,140):e&&e.code==="not_granted"?"Autorize o uso da IA para continuar.":e&&e.code==="rate_limited"?"Muitos pedidos seguidos. Espere um instante e tente de novo.":"A IA não respondeu. Tente novamente."}
 const busy=(b,...ids)=>ids.forEach(i=>$(i).disabled=b);
 
@@ -420,10 +411,7 @@ async function montar(){
   const b=+$("#orc").value,el=$("#st1");busy(true,"#bm");el.textContent="A IA está escolhendo as peças…";let erros="";
   try{
     for(let i=0;i<2;i++){
-      const j=await S.json(`Você é um especialista em montagem de PCs no Brasil. Escolha exatamente 1 peça de cada categoria (cpu, mb, ram, gpu, ssd, psu, cooler, cs) usando SOMENTE os ids do catálogo. Orçamento máximo: ${b} reais. Uso: ${$("#uso").selectedOptions[0].text}. Regras: soquete da CPU igual ao da placa; tipo de RAM igual ao da placa; formato da placa aceito pelo gabinete; GPU cabe no gabinete; cooler cabe e dissipa o TDP da CPU; fonte de pelo menos (TDP da CPU + TDP da GPU + 100) x 1.3. Gaste o orçamento onde mais importa para o uso. Responda APENAS com JSON: {"pecas":{"cpu":"id",...},"motivos":{"cpu":"frase curta em português",...},"resumo":"2 frases"}.${erros?` A tentativa anterior falhou: ${erros}. Corrija.`:""}
-
-Catálogo:
-${catalog()}`,{cache:false});
+      const j=await S.json(`Você é um especialista em montagem de PCs no Brasil. Escolha exatamente 1 peça de cada categoria (cpu, mb, ram, gpu, ssd, psu, cooler, cs) usando SOMENTE os ids do catálogo. Orçamento máximo: ${b} reais. Uso: ${$("#uso").selectedOptions[0].text}. Regras: soquete da CPU igual ao da placa; tipo de RAM igual ao da placa; formato da placa aceito pelo gabinete; GPU cabe no gabinete; cooler cabe e dissipa o TDP da CPU; fonte de pelo menos (TDP da CPU + TDP da GPU + 100) x 1.3. Gaste o orçamento onde mais importa para o uso. Responda APENAS com JSON: {"pecas":{"cpu":"id",...},"motivos":{"cpu":"frase curta em português",...},"resumo":"2 frases"}.${erros?` A tentativa anterior falhou: ${erros}. Corrija.`:""}\n\nCatálogo:\n${catalog()}`,{cache:false});
       const pc=j.pecas||{};if(!CATS.every(([k])=>D[k].some(x=>x.id===pc[k]))){erros="ids inválidos ou categorias faltando";continue}
       CATS.forEach(([k])=>sel[k]=pc[k]);why=j.motivos||{};upd();
       const r=check(),t=total();erros=[...r.E,...(t>b?[`total de ${t} excede ${b}`]:[])].join("; ");
@@ -435,23 +423,14 @@ ${catalog()}`,{cache:false});
 
 async function ask(txt,kind){
   const o=$("#ex");o.textContent="Pensando…";busy(true,"#bx","#bq");
-  try{await S(`Você é o FORJA, copiloto de hardware. Responda em português do Brasil, de forma direta e sem jargão. Use só os fatos abaixo sobre compatibilidade, que vêm do motor de regras; não invente preços.
-
-Build atual:
-${summary()}
-
-${txt}`,{cache:false,onText:({text})=>{o.textContent=text}})}
+  try{await S(`Você é o FORJA, copiloto de hardware. Responda em português do Brasil, de forma direta e sem jargão. Use só os fatos abaixo sobre compatibilidade, que vêm do motor de regras; não invente preços.\n\nBuild atual:\n${summary()}\n\n${txt}`,{cache:false,onText:({text})=>{o.textContent=text}})}
   catch(e){err(e,o)}finally{busy(false,"#bx","#bq")}
 }
 
 async function pers(){
   const b=+$("#orcp").value,el=$("#st2");busy(true,"#bp");el.textContent="A IA está escolhendo…";
   try{
-    const j=await S.json(`Escolha no máximo 1 periférico por categoria (Monitor, Teclado, Mouse, Headset, Mousepad, Webcam, Microfone, Cadeira) do catálogo${$("#mar").value.trim()?", dando preferência às marcas "+$("#mar").value.trim():""}, priorizando monitor, teclado, mouse e headset, e citando a marca e o modelo em cada motivo, somando no máximo ${b} reais, para o perfil: ${$("#uso").selectedOptions[0].text}${get("gpu")?"; placa de vídeo "+get("gpu").n:""}. Responda APENAS com JSON: {"ids":["p1",...],"motivos":{"p1":"frase curta"}}.
-
-Catálogo:
-`+PER.map(x=>`${x.id}|${x.k}|${x.b}|${x.n}|${x.p}`).join("
-"),{cache:false});
+    const j=await S.json(`Escolha no máximo 1 periférico por categoria (Monitor, Teclado, Mouse, Headset, Mousepad, Webcam, Microfone, Cadeira) do catálogo${$("#mar").value.trim()?", dando preferência às marcas "+$("#mar").value.trim():""}, priorizando monitor, teclado, mouse e headset, e citando a marca e o modelo em cada motivo, somando no máximo ${b} reais, para o perfil: ${$("#uso").selectedOptions[0].text}${get("gpu")?"; placa de vídeo "+get("gpu").n:""}. Responda APENAS com JSON: {"ids":["p1",...],"motivos":{"p1":"frase curta"}}.\n\nCatálogo:\n`+PER.map(x=>`${x.id}|${x.k}|${x.b}|${x.n}|${x.p}`).join("\n"),{cache:false});
     const seen=new Set(),it=(j.ids||[]).map(i=>PER.find(x=>x.id===i)).filter(x=>x&&!seen.has(x.k)&&seen.add(x.k)),sum=it.reduce((a,x)=>a+x.p,0);
     $("#pg").innerHTML="";
     it.forEach(x=>{const d=document.createElement("div");d.className="pc";d.innerHTML="<small></small><b></b> <span class='num'></span><em></em><a target='_blank' rel='noopener'>Ver onde comprar</a>";const[a,b2,c,e,l]=[...d.children];a.textContent=x.k+" – "+x.b;b2.textContent=x.b+" "+x.n;l.href="https://www.google.com/search?tbm=shop&q="+encodeURIComponent(x.b+" "+x.n);c.textContent=P(x.p);e.textContent=(j.motivos||{})[x.id]||"";$("#pg").append(d)});
@@ -464,14 +443,7 @@ document.querySelectorAll('[data-pre]').forEach(b=>b.onclick=()=>{const k=b.data
 $('#orc').addEventListener('input',upd);
 $('#bc').onclick=async()=>{try{await navigator.clipboard.writeText(summary());$('#st1').textContent='Lista copiada.'}catch(e){$('#ex').textContent=summary();$('#st1').textContent='Não consegui copiar aqui; a lista está no painel Pergunte ao FORJA.'}};
 $('#bmd').onclick=async()=>{
-  const md = `# 🛠️ Configuração de PC - FORJA Ultimate
-
-` + CATS.map(([k,l])=>`- **${l}**: ${get(k)?get(k).n+" ("+P(get(k).p)+")":"Não selecionado"}`).join("
-") + `
-
-- **Total Estimado**: ${P(total())}
-- **Consumo**: ${check().need} W
-- **Uso**: ${$('#uso').selectedOptions[0].text}`;
+  const md = `# 🛠️ Configuração de PC - FORJA Ultimate\n\n` + CATS.map(([k,l])=>`- **${l}**: ${get(k)?get(k).n+" ("+P(get(k).p)+")":"Não selecionado"}`).join("\n") + `\n\n- **Total Estimado**: ${P(total())}\n- **Consumo**: ${check().need} W\n- **Uso**: ${$('#uso').selectedOptions[0].text}`;
   try{await navigator.clipboard.writeText(md);$('#st1').textContent='Markdown copiado para o Reddit/Discord!';}catch(e){}
 };
 
@@ -491,9 +463,7 @@ async function gen(text){
 }
 function makeAI(){
   const S=async(t,o={})=>{const x=await gen(t);o.onText&&o.onText({text:x});return{text:x}};
-  S.json=async t=>{const x=await gen(t+'
-
-Responda somente com JSON válido, sem markdown.');const m=x.match(/\{[\s\S]*\}/);if(!m)throw new Error('A IA não devolveu JSON. Tente de novo.');return JSON.parse(m[0])};
+  S.json=async t=>{const x=await gen(t+'\n\nResponda somente com JSON válido, sem markdown.');const m=x.match(/\{[\s\S]*\}/);if(!m)throw new Error('A IA não devolveu JSON. Tente de novo.');return JSON.parse(m[0])};
   return S}
 $('#cp').innerHTML=Object.entries(AIP).map(([k,v])=>`<option value="${k}">${v.n}</option>`).join('');
 const hint=()=>$('#chint').textContent=AIP[$('#cp').value].h;
@@ -501,7 +471,6 @@ const c0=cfg();if(c0.p&&AIP[c0.p])$('#cp').value=c0.p;$('#ck').value=c0.key||'';
 $('#cp').onchange=hint;$('#bcfg').onclick=()=>$('#cfg').hidden=!$('#cfg').hidden;
 $('#cs').onclick=()=>{try{localStorage.setItem('forja-ai',JSON.stringify({p:$('#cp').value,key:$('#ck').value.trim(),model:$('#cm').value.trim()}))}catch(e){}$('#cfg').hidden=true;$('#st1').textContent='IA conectada. Pode usar os botões de IA.'};
 
-// Gerenciamento de Builds Salvas
 const sv=()=>{try{return JSON.parse(localStorage.getItem('forja-b'))||{}}catch(e){return{}}};
 function rsv(){const o=$('#sv');o.innerHTML='';o.append(new Option('Builds salvas',''));Object.keys(sv()).forEach(n=>o.append(new Option(n,n)))}
 rsv();
@@ -510,7 +479,6 @@ $('#sv').onchange=e=>{const a=sv()[e.target.value];if(a){CATS.forEach(([k],i)=>s
 $('#bl').onclick=async()=>{const h=location.href.split('#')[0]+'#b='+CATS.map(([k])=>sel[k]||'').join(',');try{await navigator.clipboard.writeText(h);$('#st1').textContent='Link da build copiado.'}catch(e){$('#ex').textContent=h}};
 const hb=(location.hash.match(/b=([^&]*)/)||[])[1];if(hb){hb.split(',').forEach((v,i)=>{if(CATS[i]&&D[CATS[i][0]].some(x=>x.id===v))sel[CATS[i][0]]=v});upd()}
 
-// Modal Peça Personalizada
 $('#btn-custom').onclick=()=>{
   $('#cust-cat').innerHTML = CATS.map(([k,l])=>`<option value="${k}">${l}</option>`).join('');
   $('#modal-custom').hidden=false;
@@ -535,7 +503,6 @@ $('#cust-save').onclick=()=>{
   if(!D[cat]) D[cat]=[];
   D[cat].push(newItem);
   
-  // Salvar no storage
   let saved = {};
   try{ saved = JSON.parse(localStorage.getItem('forja-custom')||'{}'); }catch(e){}
   if(!saved[cat]) saved[cat]=[];
@@ -549,7 +516,6 @@ $('#cust-save').onclick=()=>{
   $('#cust-name').value='';
 };
 
-// Modal Comparar Builds
 $('#btn-compare').onclick=()=>{
   const builds = sv();
   const keys = Object.keys(builds);
@@ -572,7 +538,7 @@ $('#btn-compare').onclick=()=>{
 $('#compare-close').onclick=()=>$('#modal-compare').hidden=true;
 
 let ip;addEventListener('beforeinstallprompt',e=>{e.preventDefault();ip=e;$('#bi').hidden=false});
-$('#bi').onclick=async()=>{ip.prompt();await ip.userChoice;$('#bi'].hidden=true};
+$('#bi').onclick=async()=>{ip.prompt();await ip.userChoice;$('#bi').hidden=true};
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js');
 
 (async()=>{
