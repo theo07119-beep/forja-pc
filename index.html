@@ -142,7 +142,7 @@ function check(){
   if(m&&r&&m.r!==r.r)bad(`A placa-mãe aceita ${m.r}, mas a memória é ${r.r}.`,"mb","ram");
   if(m&&k&&!k.fm.includes(m.f))bad(`A placa ${m.f} não cabe neste gabinete.`,"mb","cs");
   if(g&&k&&g.l>k.gm)bad(`A placa de vídeo tem ${g.l} mm e o gabinete aceita até ${k.gm} mm.`,"gpu","cs");
-  if(o&&k&&o.h>k.hm)bad(`O cooler tem ${o.h} mm de altura e o gabinete aceita até ${k.hm} mm.`,"cooler","cs");
+  if(o&&k&&o.h>k.hm)bad(`O cooler tem ${o.h} mm de altura e o gabinete aceita até ${k.hm} mm.`,"cooler","cpu");
   if(o&&c&&o.t<c.t)bad(`O cooler dissipa ${o.t} W e a CPU chega a ${c.t} W.`,"cooler","cpu");
   const need=(c?c.t:0)+(g?g.t:0)+((c||g)?100:0);
   if(f&&need){if(f.w<need)bad(`A fonte de ${f.w} W não cobre o consumo estimado de ${need} W.`,"psu");else if(f.w<need*1.3)W.push(`Fonte com pouca folga: ${f.w} W para ${need} W. O ideal é ter 30% de margem.`)}
@@ -219,15 +219,27 @@ document.querySelectorAll('[data-pre]').forEach(b=>b.onclick=()=>{const k=b.data
 $('#orc').addEventListener('input',upd);
 $('#bc').onclick=async()=>{try{await navigator.clipboard.writeText(summary());$('#st1').textContent='Lista copiada.'}catch(e){$('#ex').textContent=summary();$('#st1').textContent='Não consegui copiar aqui; a lista está no painel Pergunte ao FORJA.'}};
 $("#uso").addEventListener("change",upd);
-const AIP={gemini:{n:'Gemini (grátis)',m:'gemini-3.8-flash',h:'Grátis: crie a chave em aistudio.google.com/apikey e cole aqui.'},openrouter:{n:'OpenRouter (modelos grátis)',m:'meta-llama/llama-3.3-70b-instruct:free',h:'Grátis: crie a chave em openrouter.ai/keys. Use modelos terminados em :free.'},openai:{n:'ChatGPT (OpenAI)',m:'gpt-4o-mini',h:'A API da OpenAI é paga: precisa de crédito na conta, mesmo com o ChatGPT gratuito.'},claude:{n:'Claude (Anthropic)',m:'claude-haiku-5-5',h:'A API da Anthropic é paga: precisa de crédito na conta.'}};
+const AIP={gemini:{n:'Gemini (grátis)',m:'gemini-2.5-flash',h:'Grátis: crie a chave em aistudio.google.com/apikey e cole aqui.'},openrouter:{n:'OpenRouter (modelos grátis)',m:'google/gemini-2.5-flash:free',h:'Grátis: crie a chave em openrouter.ai/keys. Use modelos terminados em :free.'},openai:{n:'ChatGPT (OpenAI)',m:'gpt-4o-mini',h:'A API da OpenAI é paga: precisa de crédito na conta, mesmo com o ChatGPT gratuito.'},claude:{n:'Claude (Anthropic)',m:'claude-haiku-5-5',h:'A API da Anthropic é paga: precisa de crédito na conta.'}};
 const cfg=()=>{try{return JSON.parse(localStorage.getItem('forja-ai'))||{}}catch(e){return{}}};
 async function gen(text){
   const c=cfg();if(!c.key||!AIP[c.p]){const e=new Error('no_key');e.code='no_key';throw e}
   const m=c.model||AIP[c.p].m,H={'Content-Type':'application/json'};let r,u,b;
   if(c.p==='gemini'){u='https://generativelanguage.googleapis.com/v1beta/models/'+m+':generateContent';H['x-goog-api-key']=c.key;b={contents:[{parts:[{text}]}]}}
   else if(c.p==='claude'){u='https://api.anthropic.com/v1/messages';H['x-api-key']=c.key;H['anthropic-version']='2023-06-01';H['anthropic-dangerous-direct-browser-access']='true';b={model:m,max_tokens:1500,messages:[{role:'user',content:text}]}}
-  else{u=c.p==='openai'?'https://api.openai.com/v1/chat/completions':'https://openrouter.ai/api/v1/chat/completions';H.Authorization='Bearer '+c.key;b={model:m,messages:[{role:'user',content:text}]}}
-  r=await fetch(u,{method:'POST',headers:H,body:JSON.stringify(b)});
+  else{
+    u=c.p==='openai'?'https://api.openai.com/v1/chat/completions':'https://openrouter.ai/api/v1/chat/completions';
+    H.Authorization='Bearer '+c.key;
+    if(c.p==='openrouter'){
+      H['HTTP-Referer']=location.href;
+      H['X-Title']='FORJA Ultimate';
+    }
+    b={model:m,messages:[{role:'user',content:text}]};
+  }
+  try{
+    r=await fetch(u,{method:'POST',headers:H,body:JSON.stringify(b)});
+  }catch(errFetch){
+    throw new Error('Falha de conexão com a API. Verifique sua internet ou bloqueio de rede.');
+  }
   const j=await r.json().catch(()=>({}));
   if(!r.ok){const e=new Error((j.error&&j.error.message)||('Erro '+r.status));if(r.status===429)e.code='rate_limited';throw e}
   return c.p==='gemini'?(j.candidates?.[0]?.content?.parts||[]).map(x=>x.text).join(''):c.p==='claude'?(j.content||[]).map(x=>x.text).join(''):(j.choices?.[0]?.message?.content||'')
@@ -427,101 +439,6 @@ Microfone,Fifine,AM8,300
 Cadeira,DXRacer,Drifting,1800
 Cadeira,Corsair,T3 Rush,1900`.split('\n').forEach(l=>{const a=l.split(',').map(x=>x.trim());PER.push({id:'px'+PER.length,k:a[0],b:a[1],n:a[2],p:+a[3]})});
 const fin=()=>{Object.keys(D).forEach(k=>D[k].sort((a,b)=>a.p-b.p));build();upd()};fin();
-/* catalogo extra opcional: arquivo catalog.json na mesma pasta */
-fetch('catalog.json').then(r=>r.ok?r.json():null).then(x=>{if(!x)return;Object.keys(x).forEach(k=>{if(D[k])D[k].push(...x[k])});if(x.PER)PER.push(...x.PER);fin()}).catch(()=>{});
-
-/* IAs: Gemini, Claude e qualquer API compativel com OpenAI */
-const O=(n,m,u)=>[n,m,u],AIX={
-gemini:O('Gemini (Google) - plano grátis','gemini-3.8-flash','g'),
-claude:O('Claude (Anthropic)','claude-haiku-5-5','a'),
-openai:O('ChatGPT (OpenAI)','gpt-4o-mini','https://api.openai.com/v1/chat/completions'),
-xai:O('Grok (xAI)','grok-3-mini','https://api.x.ai/v1/chat/completions'),
-openrouter:O('OpenRouter (vários modelos, tem grátis)','meta-llama/llama-3.3-70b-instruct:free','https://openrouter.ai/api/v1/chat/completions'),
-groq:O('Groq (plano grátis)','openai/gpt-oss-20b','https://api.groq.com/openai/v1/chat/completions'),
-mistral:O('Mistral','mistral-small-latest','https://api.mistral.ai/v1/chat/completions'),
-deepseek:O('DeepSeek','deepseek-chat','https://api.deepseek.com/chat/completions'),
-perplexity:O('Perplexity','sonar','https://api.perplexity.ai/chat/completions'),
-together:O('Together AI','meta-llama/Llama-3.3-70B-Instruct-Turbo','https://api.together.xyz/v1/chat/completions'),
-fireworks:O('Fireworks AI','accounts/fireworks/models/llama-v3p3-70b-instruct','https://api.fireworks.ai/inference/v1/chat/completions'),
-cerebras:O('Cerebras (plano grátis)','llama-3.3-70b','https://api.cerebras.ai/v1/chat/completions'),
-nvidia:O('NVIDIA NIM','meta/llama-3.3-70b-instruct','https://integrate.api.nvidia.com/v1/chat/completions'),
-hf:O('Hugging Face','meta-llama/Llama-3.3-70B-Instruct','https://router.huggingface.co/v1/chat/completions'),
-cohere:O('Cohere','command-r-plus-08-2024','https://api.cohere.ai/compatibility/v1/chat/completions'),
-kimi:O('Kimi (Moonshot)','kimi-k2-0905-preview','https://api.moonshot.ai/v1/chat/completions'),
-qwen:O('Qwen (Alibaba)','qwen-plus','https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions'),
-glm:O('GLM (Zhipu)','glm-4-flash','https://open.bigmodel.cn/api/paas/v4/chat/completions'),
-custom:O('Outra IA (qualquer API compatível com OpenAI)','','')};
-const KS='forja-ai2',st=()=>{try{return JSON.parse(localStorage.getItem(KS))||{}}catch(e){return{}}};
-gen=async function(text){
-  const s=st(),p=s.p,x=AIX[p],kk=(s.k||{})[p],m=(s.m||{})[p]||(x&&x[1]);
-  if(!x||!kk){const e=new Error('no_key');e.code='no_key';throw e}
-  const H={'Content-Type':'application/json'};let u=x[2],b;
-  if(u==='g'){u='https://generativelanguage.googleapis.com/v1beta/models/'+m+':generateContent';H['x-goog-api-key']=kk;b={contents:[{parts:[{text}]}]}}
-  else if(u==='a'){u='https://api.anthropic.com/v1/messages';H['x-api-key']=kk;H['anthropic-version']='2023-06-01';H['anthropic-dangerous-direct-browser-access']='true';b={model:m,max_tokens:2000,messages:[{role:'user',content:text}]}}
-  else{if(p==='custom')u=s.u;if(!u)throw new Error('Informe a URL da API em Configurar IA.');if(!m)throw new Error('Informe o nome do modelo em Configurar IA.');H.Authorization='Bearer '+kk;b={model:m,messages:[{role:'user',content:text}]}}
-  let r;try{r=await fetch(u,{method:'POST',headers:H,body:JSON.stringify(b)})}catch(e){throw new Error('O navegador não conseguiu falar com essa IA (ela pode bloquear acesso direto do navegador, ou você está sem internet). Tente OpenRouter ou outra.')}
-  const j=await r.json().catch(()=>({}));
-  if(!r.ok){const e=new Error(String((j.error&&(j.error.message||j.error))||j.message||('Erro '+r.status)));if(r.status===429)e.code='rate_limited';throw e}
-  return u.includes('generativelanguage')?(j.candidates?.[0]?.content?.parts||[]).map(y=>y.text).join(''):j.content?(j.content||[]).map(y=>y.text).join(''):(j.choices?.[0]?.message?.content||'')
-};
-const cp=$('#cp');cp.innerHTML=Object.entries(AIX).map(([k,v])=>`<option value="${k}">${v[0]}</option>`).join('');
-$('#cm').parentElement.insertAdjacentHTML('afterend','<label class="f" id="cul" hidden>URL da API<input id="cu" style="width:260px" placeholder="https://.../v1/chat/completions"></label>');
-const load=()=>{const s=st(),p=cp.value;$('#ck').value=(s.k||{})[p]||'';$('#cm').value=(s.m||{})[p]||'';$('#cm').placeholder=AIX[p][1];$('#cu').value=s.u||'';$('#cul').hidden=p!=='custom';$('#chint').textContent='Crie a chave no site da própria IA. Se o modelo padrão não existir mais, copie o nome de um modelo atual do painel deles e cole em Modelo.'};
-const s0=st();if(s0.p&&AIX[s0.p])cp.value=s0.p;load();cp.onchange=load;
-$('#cs').onclick=()=>{const s=st(),p=cp.value;s.p=p;s.k={...s.k,[p]:$('#ck').value.trim()};s.m={...s.m,[p]:$('#cm').value.trim()};if(p==='custom')s.u=$('#cu').value.trim();try{localStorage.setItem(KS,JSON.stringify(s))}catch(e){}$('#cfg').hidden=true;$('#st1').textContent='IA conectada: '+AIX[p][0]+'.'};
-/* IA v3: acha modelo sozinho, tenta de novo, JSON forte */
-AIX.openrouter[0]='OpenRouter (grátis automático)';AIX.openrouter[1]='openrouter/free';
-[...cp.options].forEach(o=>{if(o.value==='openrouter')o.textContent=AIX.openrouter[0]});
-const sl=ms=>new Promise(r=>setTimeout(r,ms)),cache={};
-const pj=x=>{x=String(x||'').replace(/```(?:json)?/gi,'');
-  for(let s=x.indexOf('{');s>=0;s=x.indexOf('{',s+1)){
-    let d=0,q=false,e=false;
-    for(let i=s;i<x.length;i++){const c=x[i];
-      if(q){if(e)e=false;else if(c==='\\')e=true;else if(c==='"')q=false;continue}
-      if(c==='"')q=true;else if(c==='{')d++;else if(c==='}'&&--d===0){try{return JSON.parse(x.slice(s,i+1))}catch(_){}break}
-    }}
-  return null};
-async function lst(p,kk){
-  if(cache[p])return cache[p];let ids=[];
-  try{const x=AIX[p];
-    if(x[2]==='g'){const j=await(await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200',{headers:{'x-goog-api-key':kk}})).json();
-      ids=(j.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes('generateContent')&&/flash/i.test(m.name)&&!/image|tts|live|audio|embed|thinking/i.test(m.name)).map(m=>m.name.replace('models/','')).sort().reverse()}
-    else if(x[2]!=='a'){
-      const b=p==='openrouter'?'https://openrouter.ai/api/v1/models':String(p==='custom'?st().u:x[2]).replace(/\/chat\/completions$/,'/models');
-      const j=await(await fetch(b,{headers:{Authorization:'Bearer '+kk}})).json();let d=j.data||j.models||[];
-      if(p==='openrouter')d=d.filter(m=>m.pricing&&+m.pricing.prompt===0&&+m.pricing.completion===0).sort((a,c)=>(c.context_length||0)-(a.context_length||0));
-      ids=d.map(m=>m.id||m.name).filter(i=>i&&!/embed|whisper|tts|guard|moderat|image|audio|vision|rerank|dall/i.test(i))}
-  }catch(e){}
-  return cache[p]=ids}
-async function call(p,kk,m,text){
-  const x=AIX[p],H={'Content-Type':'application/json'};let u=x[2],b,r;
-  if(u==='g'){u='https://generativelanguage.googleapis.com/v1beta/models/'+m+':generateContent';H['x-goog-api-key']=kk;b={contents:[{parts:[{text}]}]}}
-  else if(u==='a'){u='https://api.anthropic.com/v1/messages';H['x-api-key']=kk;H['anthropic-version']='2023-06-01';H['anthropic-dangerous-direct-browser-access']='true';b={model:m,max_tokens:3500,messages:[{role:'user',content:text}]}}
-  else{if(p==='custom')u=st().u;if(!u)throw new Error('Informe a URL da API em Configurar IA.');H.Authorization='Bearer '+kk;b={model:m,max_tokens:3500,messages:[{role:'user',content:text}]}}
-  const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),60000);
-  const go=()=>fetch(u,{method:'POST',headers:H,body:JSON.stringify(b),signal:ac.signal});
-  try{try{r=await go()}catch(e){if(e.name==='AbortError')throw e;await sl(1500);r=await go()}}
-  catch(e){throw new Error(e.name==='AbortError'?'A IA demorou demais para responder.':'O navegador não conseguiu falar com '+new URL(u).host+' ('+(e.message||'sem detalhe')+'). Pode ser bloqueio do navegador, sinal fraco, ou a tela apagou durante o pedido. Tente de novo.')}
-  finally{clearTimeout(tm)}
-  const j=await r.json().catch(()=>({}));
-  if(!r.ok){const e=new Error(String((j.error&&(j.error.message||j.error))||j.message||('Erro '+r.status)));e.status=r.status;if(r.status===429)e.code='rate_limited';throw e}
-  const o=u.includes('generativelanguage')?(j.candidates?.[0]?.content?.parts||[]).map(y=>y.text).join(''):j.content?(j.content||[]).map(y=>y.text).join(''):(j.choices?.[0]?.message?.content||'');
-  if(!String(o).trim())throw new Error('A IA respondeu vazio.');
-  return o}
-gen=async function(text){
-  const s=st(),p=s.p,x=AIX[p],kk=(s.k||{})[p];
-  if(!x||!kk){const e=new Error('no_key');e.code='no_key';throw e}
-  const first=((s.m||{})[p]||'').trim()||x[1];let last;
-  try{return await call(p,kk,first,text)}catch(e){last=e}
-  const bad=last.status===404||last.status===400||last.code==='rate_limited'||/exist|found|unavailable|no longer|deprecat|decommission|access|support|no endpoints|invalid model|slug|demand|overload|vazio|temporar/i.test(last.message||'');
-  if(!bad)throw last;
-  const L=await lst(p,kk),c=[...new Set([x[1],...(p==='openrouter'?['openrouter/free']:[]),...L])].filter(m=>m&&m!==first).slice(0,6);
-  for(const m of c){if(last.code==='rate_limited')await sl(2000);try{return await call(p,kk,m,text)}catch(e){last=e}}
-  throw last};
-S.json=async t=>{
-  for(let i=0;i<4;i++){const j=pj(await gen(t+'\n\nResponda somente com JSON válido, sem markdown e sem explicações.'));if(j)return j}
-  throw new Error('A IA não devolveu JSON válido depois de 4 tentativas. Toque em Montar com IA de novo.')};
-const ch0=cp.onchange;cp.onchange=()=>{ch0();$('#chint').textContent='Deixe o campo Modelo vazio: o app acha um modelo que funciona sozinho. Crie a chave no site da própria IA.'};cp.onchange();
 })();
 </script>
 <script>
