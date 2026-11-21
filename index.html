@@ -61,11 +61,14 @@ button:disabled{opacity:.45;cursor:not-allowed}
 @media(max-width:860px){.grid{grid-template-columns:1fr}.side{position:static}.row{grid-template-columns:96px 1fr 74px 12px}}
 @media(prefers-reduced-motion:reduce){.rail b{transition:none}}
 .hd{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}[hidden]{display:none!important}
+button:not(.g){color:var(--on,#06161A)}
+.hb{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:100%}.hb button{padding:8px 11px;font-size:13px;white-space:nowrap}
+@media(max-width:860px){.hd{flex-direction:column;align-items:stretch;gap:12px}.hb{justify-content:flex-start}}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="hd"><div class="brand"><i></i>FORJA</div><div style="display:flex;gap:8px"><button class="g" id="bi" hidden>Instalar app</button><button class="g" id="bcfg">Configurar IA</button></div></div>
+  <div class="hd"><div class="brand"><i></i>FORJA</div><div class="hb"><button class="g" id="bi" hidden>Instalar app</button><button class="g" id="bcfg">Configurar IA</button></div></div>
 <div class="card" id="cfg" hidden style="margin-top:14px"><h3>Conectar uma IA</h3><p class="msg">Escolha uma IA e cole a sua chave. Ela fica salva só neste aparelho, e os pedidos vão direto do seu navegador para a empresa da IA.</p><div class="ai" style="border:0;padding:0"><label class="f">IA<select id="cp"></select></label><label class="f">Chave de API<input id="ck" type="password" autocomplete="off" style="width:240px"></label><label class="f">Modelo (opcional)<input id="cm" style="width:200px"></label><button id="cs">Salvar</button></div><p class="msg" id="chint"></p></div>
   <section class="hero">
     <h1>Monte seu PC sem erro e sem pagar a mais.</h1>
@@ -496,8 +499,9 @@ async function call(p,kk,m,text){
   else if(u==='a'){u='https://api.anthropic.com/v1/messages';H['x-api-key']=kk;H['anthropic-version']='2023-06-01';H['anthropic-dangerous-direct-browser-access']='true';b={model:m,max_tokens:3500,messages:[{role:'user',content:text}]}}
   else{if(p==='custom')u=st().u;if(!u)throw new Error('Informe a URL da API em Configurar IA.');H.Authorization='Bearer '+kk;b={model:m,max_tokens:3500,messages:[{role:'user',content:text}]}}
   const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),60000);
-  try{r=await fetch(u,{method:'POST',headers:H,body:JSON.stringify(b),signal:ac.signal})}
-  catch(e){throw new Error(e.name==='AbortError'?'A IA demorou demais para responder.':'O navegador não conseguiu falar com essa IA (ela pode bloquear acesso direto do navegador, ou você está sem internet).')}
+  const go=()=>fetch(u,{method:'POST',headers:H,body:JSON.stringify(b),signal:ac.signal});
+  try{try{r=await go()}catch(e){if(e.name==='AbortError')throw e;await sl(1500);r=await go()}}
+  catch(e){throw new Error(e.name==='AbortError'?'A IA demorou demais para responder.':'O navegador não conseguiu falar com '+new URL(u).host+' ('+(e.message||'sem detalhe')+'). Pode ser bloqueio do navegador, sinal fraco, ou a tela apagou durante o pedido. Tente de novo.')}
   finally{clearTimeout(tm)}
   const j=await r.json().catch(()=>({}));
   if(!r.ok){const e=new Error(String((j.error&&(j.error.message||j.error))||j.message||('Erro '+r.status)));e.status=r.status;if(r.status===429)e.code='rate_limited';throw e}
@@ -529,6 +533,91 @@ f:['Ryzen 9 7950X','X670E ATX','96 GB DDR5 6000','RTX 4070 Ti Super','SSD NVMe 2
 g:['Core i9-14900K','Z790 ATX DDR5','128 GB DDR5 5600','RTX 5090','SSD NVMe 4 TB','Fonte 1200 W 80+ Platinum','Water cooler 360 mm','Gabinete full tower grande','3d',32000]};
 const C=['cpu','mb','ram','gpu','ssd','psu','cooler','cs'];
 document.querySelectorAll('[data-pre]').forEach(b=>{const r=R[b.dataset.pre];if(!r)return;b.onclick=()=>{C.forEach((c,i)=>{const x=D[c].find(y=>y.n===r[i]);if(x)sel[c]=x.id});why={};$('#uso').value=r[8];$('#orc').value=r[9];upd()}});
+})();
+</script>
+<script>
+/* FORJA: Peça Personalizada, Comparar Builds, Tema */
+(()=>{
+const KC='forja-cust',KT='forja-tema';
+const rd=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))||d}catch(e){return d}},wr=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+$('#bcfg').insertAdjacentHTML('beforebegin','<button class="g" id="bpc">+ Peça Personalizada</button><button class="g" id="bcp">Comparar Builds</button><button class="g" id="btm">Tema</button>');
+$('#cfg').insertAdjacentHTML('afterend','<div class="card" id="ppc" hidden style="margin-top:14px"></div><div class="card" id="pcm" hidden style="margin-top:14px"></div><div class="card" id="ptm" hidden style="margin-top:14px"></div>');
+const tg=id=>{const o=$(id).hidden;['#ppc','#pcm','#ptm','#cfg'].forEach(x=>$(x).hidden=true);$(id).hidden=!o};
+$('#bpc').onclick=()=>tg('#ppc');$('#bcp').onclick=()=>{tg('#pcm');ropt()};$('#btm').onclick=()=>tg('#ptm');
+/* peça personalizada */
+const F={cpu:[['s','Soquete (ex.: AM5)','t'],['t','Consumo em W','n'],['k','Desempenho de 1 a 5','n']],mb:[['s','Soquete','t'],['r','Memória (DDR4 ou DDR5)','t'],['f','Formato (mATX ou ATX)','t']],ram:[['r','Tipo (DDR4 ou DDR5)','t'],['g','Capacidade em GB','n']],gpu:[['t','Consumo em W','n'],['l','Comprimento em mm','n'],['k','Desempenho de 1 a 5','n']],ssd:[['g','Capacidade em GB','n']],psu:[['w','Potência em W','n']],cooler:[['h','Altura em mm','n'],['t','Dissipa até (W)','n']],cs:[['fm','Formatos aceitos (ex.: mATX/ATX)','t'],['gm','GPU máxima em mm','n'],['hm','Cooler máximo em mm','n']]};
+$('#ppc').innerHTML='<h3>Adicionar peça</h3><p class="msg">Cadastre uma peça que não está na lista. Ela fica salva neste aparelho e entra na checagem de compatibilidade.</p><div class="ai" style="border:0;padding:0"><label class="f">Categoria<select id="pck"></select></label><label class="f">Nome<input id="pcn" style="width:210px"></label><label class="f">Preço (R$)<input id="pcp" type="number" min="0" style="width:110px"></label></div><div class="ai" id="pcf" style="border:0;padding:0;margin-top:10px"></div><div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button id="pca">Adicionar</button><button class="g" id="pcd">Apagar peças personalizadas</button><span class="msg" id="pcm2" style="margin:0"></span></div>';
+const pck=$('#pck');pck.innerHTML=CATS.map(([k,l])=>`<option value="${k}">${l}</option>`).join('');
+const rf=()=>{$('#pcf').innerHTML=F[pck.value].map(([k,l,y])=>`<label class="f">${l}<input data-k="${k}" type="${y==='n'?'number':'text'}" style="width:${y==='n'?120:160}px"></label>`).join('')};pck.onchange=rf;rf();
+const fm=x=>/^m/i.test(String(x).trim())?'mATX':'ATX';
+const mk=(c,id,n,p,v)=>{const o={id,n,p};for(const[k,,y]of F[c])o[k]=y==='n'?+v[k]:v[k];if(o.s)o.s=o.s.toUpperCase();if(o.r)o.r=o.r.toUpperCase();if(o.f)o.f=fm(o.f);if(c==='cs')o.fm=[...new Set(String(v.fm).split('/').map(fm))];return o};
+const addC=(c,o)=>{D[c].push(o);D[c].sort((a,b)=>a.p-b.p)};
+$('#pca').onclick=()=>{const c=pck.value,n=$('#pcn').value.trim(),p=+$('#pcp').value,v={},m=$('#pcm2');$('#pcf').querySelectorAll('input').forEach(i=>v[i.dataset.k]=i.value.trim());
+  if(!n||$('#pcp').value===''||!(p>=0)||F[c].some(([k,,y])=>v[k]===''||(y==='n'&&!(+v[k]>0)))){m.textContent='Preencha tudo, com números maiores que zero.';return}
+  const o=mk(c,'cust_'+Date.now(),n,p,v);addC(c,o);const L=rd(KC,[]);L.push({c,o});wr(KC,L);build();sel[c]=o.id;upd();m.textContent='Peça adicionada e escolhida.';$('#pcn').value='';$('#pcp').value=''};
+$('#pcd').onclick=()=>{if(confirm('Apagar todas as peças personalizadas?')){wr(KC,[]);location.reload()}};
+rd(KC,[]).forEach(({c,o})=>{if(D[c])addC(c,o)});build();upd();
+/* comparar builds */
+$('#pcm').innerHTML='<h3>Comparar builds</h3><p class="msg">Escolha duas: a atual, uma pronta ou uma que você salvou.</p><div class="ai" style="border:0;padding:0"><label class="f">Build A<select id="cpa"></select></label><label class="f">Build B<select id="cpb"></select></label><button id="cpg">Comparar</button></div><div style="overflow-x:auto"><table id="cpt" style="width:100%;border-collapse:collapse;margin-top:12px;font-size:14px"></table></div>';
+const PN={a:'Pronta: Entrada 1080p',b:'Pronta: Gamer 1440p',c:'Pronta: Criador de conteúdo'};
+function ropt(){const o=[['cur','Build atual'],...Object.entries(PN).map(([k,v])=>['pre:'+k,v]),...Object.keys(rd('forja-b',{})).map(n=>['sv:'+n,'Salva: '+n])];['#cpa','#cpb'].forEach((s,i)=>{const e=$(s),old=e.value;e.innerHTML='';o.forEach(([v,x])=>e.append(new Option(x,v)));e.value=old&&[...e.options].some(x=>x.value===old)?old:o[Math.min(i,o.length-1)][0]})}
+const ids=v=>v==='cur'?CATS.map(([k])=>sel[k]||''):v.startsWith('pre:')?PRE[v.slice(4)]:(rd('forja-b',{})[v.slice(3)]||[]);
+function ev(a){const bk={...sel};Object.keys(sel).forEach(k=>delete sel[k]);CATS.forEach(([k],i)=>{if(a[i])sel[k]=a[i]});const r=check(),sc=score(),t=total();Object.keys(sel).forEach(k=>delete sel[k]);Object.assign(sel,bk);return{parts:CATS.map(([k],i)=>D[k].find(y=>y.id===a[i])||null),r,sc,t}}
+$('#cpg').onclick=()=>{const A=ev(ids($('#cpa').value)),B=ev(ids($('#cpb').value)),T=$('#cpt');T.innerHTML='';
+  const row=(l,a,b,ba,bb)=>{const tr=T.insertRow();[l,a,b].forEach((x,i)=>{const td=tr.insertCell();td.textContent=x;td.style.cssText='padding:8px 10px;border-bottom:1px solid var(--ln);'+(i?'':'color:var(--mu);')+((i===1&&ba)||(i===2&&bb)?'color:var(--ok);font-weight:700':'')})};
+  const pt=x=>x?x.n+' ('+P(x.p)+')':'–';
+  CATS.forEach(([k,l],i)=>row(l,pt(A.parts[i]),pt(B.parts[i])));
+  const sa=A.sc?A.sc.v:-1,sb=B.sc?B.sc.v:-1;
+  row('Total',P(A.t),P(B.t),A.t<B.t,B.t<A.t);
+  row('Nota',A.sc?A.sc.v:'–',B.sc?B.sc.v:'–',sa>sb,sb>sa);
+  row('Compatível?',A.r.E.length?A.r.E.length+' problema(s)':'Sim',B.r.E.length?B.r.E.length+' problema(s)':'Sim',!A.r.E.length&&B.r.E.length>0,!B.r.E.length&&A.r.E.length>0);
+  const ra=sa>0&&A.t?sa/A.t:0,rb=sb>0&&B.t?sb/B.t:0;
+  row('Custo-benefício',ra>rb?'melhor':'',rb>ra?'melhor':'',ra>rb,rb>ra)};
+/* tema */
+const TM={escuro:{'--bg':'#0A0B0F','--s1':'#12141A','--s2':'#1A1D26','--tx':'#E8EAF0','--mu':'#8A90A2','--ln':'#262A36','--ok':'#3DDC97','--er':'#FF5C6C','--am':'#FFB547','--on':'#06161A'},claro:{'--bg':'#F4F6F9','--s1':'#FFFFFF','--s2':'#EAEEF4','--tx':'#12141A','--mu':'#566078','--ln':'#D5DAE4','--ok':'#12805A','--er':'#C2283A','--am':'#A56200','--on':'#FFFFFF'}};
+const AC={Ciano:['#2DE2E6','#007E86'],Verde:['#3DDC97','#12805A'],Roxo:['#A78BFA','#6D45D9'],Laranja:['#FFA94D','#B45309'],Rosa:['#FF7AB6','#C2185B']};
+function ap(){const t=rd(KT,{m:'escuro',a:'Ciano'}),r=document.documentElement.style,mm=t.m==='auto'?(matchMedia('(prefers-color-scheme: light)').matches?'claro':'escuro'):(t.m==='claro'?'claro':'escuro');
+  Object.entries(TM[mm]).forEach(([k,v])=>r.setProperty(k,v));r.setProperty('--cy',(AC[t.a]||AC.Ciano)[mm==='claro'?1:0]);r.colorScheme=mm==='claro'?'light':'dark';
+  const m=document.querySelector('meta[name=theme-color]');if(m)m.setAttribute('content',TM[mm]['--bg'])}
+$('#ptm').innerHTML='<h3>Tema do app</h3><div class="ai" style="border:0;padding:0;margin-top:8px"><label class="f">Modo<select id="tmm"><option value="escuro">Escuro</option><option value="claro">Claro</option><option value="auto">Automático (igual ao celular)</option></select></label><label class="f">Cor de destaque<select id="tma">'+Object.keys(AC).map(k=>`<option>${k}</option>`).join('')+'</select></label></div>';
+const t0=rd(KT,{m:'escuro',a:'Ciano'});$('#tmm').value=t0.m;$('#tma').value=t0.a;
+const st2=()=>{wr(KT,{m:$('#tmm').value,a:$('#tma').value});ap()};$('#tmm').onchange=st2;$('#tma').onchange=st2;ap();
+})();
+</script>
+<script>
+/* FORJA: montar sem IA, FPS estimado, exportar, limpar */
+(()=>{
+function auto(b){
+  const u=$('#uso').value,gb={g4k:32,stream:32,ed:32,'3d':64,ia:64}[u]||16,sg={g4k:2000,ed:2000,'3d':2000,ia:2000}[u]||1000;
+  const mn=(a,f)=>a.filter(f).sort((x,y)=>x.p-y.p)[0];
+  const ssd=mn(D.ssd,x=>x.g>=sg)||[...D.ssd].sort((x,y)=>y.g-x.g)[0];
+  const bk={...sel};let best=null,bv=-1,bt=0;
+  for(const c of D.cpu)for(const rt of['DDR4','DDR5']){
+    const m=mn(D.mb,x=>x.s===c.s&&x.r===rt),ram=mn(D.ram,x=>x.r===rt&&x.g>=gb);if(!m||!ram)continue;
+    for(const g of D.gpu){
+      const need=(c.t+g.t+100)*1.3,psu=mn(D.psu,x=>x.w>=need);if(!psu)continue;
+      let cc=null;
+      for(const k of D.cs){if(!k.fm.includes(m.f)||g.l>k.gm)continue;const o=mn(D.cooler,x=>x.t>=c.t&&x.h<=k.hm);if(!o)continue;if(!cc||k.p+o.p<cc.k.p+cc.o.p)cc={k,o}}
+      if(!cc)continue;
+      const t=c.p+m.p+ram.p+g.p+ssd.p+psu.p+cc.o.p+cc.k.p;if(t>b)continue;
+      Object.keys(sel).forEach(x=>delete sel[x]);Object.assign(sel,{cpu:c.id,mb:m.id,ram:ram.id,gpu:g.id,ssd:ssd.id,psu:psu.id,cooler:cc.o.id,cs:cc.k.id});
+      const s=score();if(!s)continue;
+      if(s.v>bv||(s.v===bv&&t<bt)){bv=s.v;bt=t;best={...sel}}
+    }}
+  Object.keys(sel).forEach(x=>delete sel[x]);Object.assign(sel,bk);return best?{sel:best,v:bv,t:bt}:null}
+$('.brand').insertAdjacentHTML('beforeend','<span style="margin-left:6px;font:500 12px Inter,sans-serif;padding:4px 9px;border-radius:8px;background:var(--s2);color:var(--cy)">Ultimate</span>');
+$('#bm').insertAdjacentHTML('afterend','<button class="g" id="bna">Montar sem IA</button>');
+$('#bna').onclick=()=>{const b=+$('#orc').value,r=auto(b),m=$('#st1');if(!r){m.textContent='Nenhuma build compatível cabe nesse orçamento. Aumente o valor.';return}Object.assign(sel,r.sel);why={};upd();m.textContent='Build montada pelo motor de regras (sem IA): nota '+r.v+', total '+P(r.t)+'.'};
+$('#bs').insertAdjacentHTML('afterend','<button class="g" id="bcl">Limpar tudo</button><button class="g" id="bmd">Exportar Markdown</button>');
+$('#bcl').onclick=()=>{Object.keys(sel).forEach(k=>delete sel[k]);why={};$('#ex').textContent='';upd();$('#st1').textContent='Build limpa.'};
+$('#bmd').onclick=()=>{const L=check(),sc=score();const md='# Build FORJA\n\nUso: '+$('#uso').selectedOptions[0].text+'\n\n| Peça | Modelo | Preço |\n|---|---|---|\n'+CATS.map(([k,l])=>{const x=get(k);return '| '+l+' | '+(x?x.n:'–')+' | '+(x?P(x.p):'–')+' |'}).join('\n')+'\n\n**Total:** '+P(total())+'\n\n**Consumo estimado:** '+L.need+' W\n\n**Nota:** '+(sc?sc.v+'/100':'–')+'\n\n**Compatibilidade:** '+(L.E.length?L.E.join(' ; '):'sem problemas encontrados')+'\n';
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([md],{type:'text/markdown'}));a.download='build-forja.md';document.body.append(a);a.click();a.remove();$('#st1').textContent='Arquivo build-forja.md baixado.'};
+$('#cl').insertAdjacentHTML('afterend','<div id="fps" style="margin-top:14px"></div>');
+function fps(){const c=get('cpu'),g=get('gpu'),r=get('ram'),e=$('#fps');if(!(c&&g)){e.innerHTML='';return}
+  const u=$('#uso').value,rf=u==='g1440'?.65:u==='g4k'?.38:1,res={1:'1080p','0.65':'1440p','0.38':'4K'}[rf];
+  const cy=Math.round(Math.min(25*Math.pow(1.55,g.k)*rf,(90+35*c.k)*(rf>.5?1:.8))),cs=Math.round(Math.min((120+70*c.k)*(rf>.9?1:rf>.5?.85:.6),120*Math.pow(1.5,g.k)*(rf>.9?1:rf>.5?.8:.55))),pts=Math.round((c.k*.5+g.k*.35+Math.min((r?r.g:16)/64,1)*5*.15)*190);
+  e.innerHTML='<h3 style="font-size:16px;margin-bottom:8px">Desempenho estimado ('+res+')</h3>'+[['Cyberpunk 2077',cy+' FPS'],['CS2 / Valorant',cs+' FPS'],['Render / Edição',pts+' pts']].map(([a,b])=>'<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--ln);font-size:14px"><span>'+a+'</span><b class="num" style="color:var(--cy)">'+b+'</b></div>').join('')+'<div class="msg">Estimativa aproximada pelo nível das peças. Não é benchmark.</div>'}
+const u0=upd;upd=function(){u0();fps()};fps();
 })();
 </script>
 </body>
