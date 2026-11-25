@@ -509,7 +509,7 @@ async function call(p,kk,m,text){
   if(!String(o).trim())throw new Error('A IA respondeu vazio.');
   return o}
 gen=async function(text){
-  const s=st(),p=s.p,x=AIX[p],kk=(s.k||{})[p];
+  const s=st(),p=s.p,x=AIX[p],kk=String((s.k||{})[p]||'').replace(/[^\x21-\x7E]/g,'');
   if(!x||!kk){const e=new Error('no_key');e.code='no_key';throw e}
   const first=((s.m||{})[p]||'').trim()||x[1];let last;
   try{return await call(p,kk,first,text)}catch(e){last=e}
